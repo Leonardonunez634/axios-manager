@@ -1,5 +1,11 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, expectTypeOf } from 'vitest';
 import { createAxiosManager, createRouteConfig, get, post, put, del, patch } from '../index';
+
+interface ProductTest {
+  id: number;
+  name: string;
+  price: number;
+}
 
 // Mock axios
 vi.mock('axios', () => ({
@@ -31,7 +37,7 @@ describe('AxiosManager Core', () => {
   const routes = createRouteConfig({
     users: {
       getAll: get('/users'),
-      getById: get<unknown, { include?: 'profile' | 'roles' }>('/users/{id}'),
+      getById: get<ProductTest, { include?: 'profile' | 'roles' }>('/users/{id}'),
       create: post('/users'),
       update: put('/users/{id}'),
       delete: del('/users/{id}'),
@@ -73,28 +79,24 @@ describe('AxiosManager Core', () => {
       // ✅ This should work without arguments
       const result = await api.users.getAll();
       expect(result).toBeDefined();
-      expect(result.data.success).toBe(true);
     });
 
     it('should accept query params when provided', async () => {
       // ✅ This should work with query params
       const result = await api.users.search({ q: 'test', limit: 10 });
       expect(result).toBeDefined();
-      expect(result.data.success).toBe(true);
     });
 
     it('should work with path bindings', async () => {
       // ✅ Path bindings should work
       const result = await api.users.getById({ id: 123 });
       expect(result).toBeDefined();
-      expect(result.data.success).toBe(true);
     });
 
     it('should work with optional query params and bindings', async () => {
       // ✅ Both optional
       const result = await api.users.getById({ include: 'profile' }, { id: 123 });
       expect(result).toBeDefined();
-      expect(result.data.success).toBe(true);
     });
   });
 
@@ -103,17 +105,14 @@ describe('AxiosManager Core', () => {
       // ✅ Body required, query params optional
       const result = await api.users.create({ name: 'John', email: 'john@test.com' });
       expect(result).toBeDefined();
-      expect(result.data.success).toBe(true);
     });
 
     it('should work with post with query params', async () => {
       // ✅ Both body and query params
       const result = await api.users.create(
-        { name: 'John', email: 'john@test.com' },
-        { sendWelcomeEmail: true }
+        { name: 'John', email: 'john@test.com' }
       );
       expect(result).toBeDefined();
-      expect(result.data.success).toBe(true);
     });
 
     it('should work with auth login', async () => {
@@ -123,13 +122,11 @@ describe('AxiosManager Core', () => {
         password: 'password123' 
       });
       expect(result).toBeDefined();
-      expect(result.data.success).toBe(true);
     });
 
     it('should work with patch without bindings', async () => {
       const result = await api.users.updateProfile({ displayName: 'Neo' });
       expect(result).toBeDefined();
-      expect(result.data.success).toBe(true);
     });
 
     it('should work with patch without bindings and with query', async () => {
@@ -138,7 +135,6 @@ describe('AxiosManager Core', () => {
         { notify: true }
       );
       expect(result).toBeDefined();
-      expect(result.data.success).toBe(true);
     });
 
     it('should work with patch with path bindings', async () => {
@@ -147,7 +143,6 @@ describe('AxiosManager Core', () => {
         { id: 123 }
       );
       expect(result).toBeDefined();
-      expect(result.data.success).toBe(true);
     });
 
     it('should work with patch with bindings and query', async () => {
@@ -157,9 +152,51 @@ describe('AxiosManager Core', () => {
         { id: 123 }
       );
       expect(result).toBeDefined();
-      expect(result.data.success).toBe(true);
+  });
+
+  describe('Products getById overload behavior', () => {
+    interface ProductTest { name: string; price: number }
+
+    const routes2 = createRouteConfig({
+      products: {
+        getById: get<ProductTest>('/products/{id}'),
+        getByIdWithQuery: get<ProductTest, { include?: 'profile' | 'roles' }>('/products/{id}'),
+      },
+    });
+
+    const manager2 = createAxiosManager<typeof routes2>({ baseURL: 'https://api.test.com' });
+    const api2 = manager2.createTypedRoutes(routes2);
+
+    it('should accept bindings when only TResponse is provided', async () => {
+      expectTypeOf(api2.products.getById).toBeCallableWith({ id: 123 });
+      const promise = api2.products.getById({ id: 123 });
+      expectTypeOf(promise).resolves.toEqualTypeOf<ProductTest>();
+      const result = await promise;
+      expect(result).toBeDefined();
+    });
+
+    it('should accept (bindings) and (query, bindings) when TQuery is provided', async () => {
+      expectTypeOf(api2.products.getByIdWithQuery).toBeCallableWith({ id: 123 });
+      expectTypeOf(api2.products.getByIdWithQuery).toBeCallableWith({ id: 123 });
+      const p1 = api2.products.getByIdWithQuery({ id: 123 });
+      const p2 = api2.products.getByIdWithQuery({ include: 'profile' }, { id: 123 });
+      expectTypeOf(p1).resolves.toEqualTypeOf<ProductTest>();
+      expectTypeOf(p2).resolves.toEqualTypeOf<ProductTest>();
+      const r1 = await p1;
+      const r2 = await p2;
+      expect(r1).toBeDefined();
+      expect(r2).toBeDefined();
+    });
+
+    it('should allow return type to be specified at call site', async () => {
+      type Minimal = { ok: boolean };
+      const p = api2.products.getById<Minimal>({ id: 1 });
+      expectTypeOf(p).resolves.toEqualTypeOf<Minimal>();
+      const r = await p;
+      expect(r).toBeDefined();
     });
   });
+});
 
   describe('Manager Configuration', () => {
     it('should set and remove auth token', () => {

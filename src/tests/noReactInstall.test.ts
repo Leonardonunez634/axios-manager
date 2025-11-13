@@ -40,10 +40,11 @@ describe('Install without React', () => {
     const manager = pkg.createAxiosManager();
     const api = manager.createTypedRoutes(routes);
 
-    const res1 = await api.sample.ping();
+    type ApiEnvelope = { code: string; httpStatus: number; message: string; data: { ok: boolean } };
+    const res1 = await api.sample.ping<ApiEnvelope>({});
     expect(res1.data.ok).toBe(true);
 
-    const res2 = await api.sample.update({ name: 'test' }, { id: 1 });
+    const res2 = await api.sample.update<ApiEnvelope>({ name: 'test' }, { id: 1 });
     expect(res2.data.ok).toBe(true);
   });
 });

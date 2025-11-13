@@ -1,4 +1,5 @@
 import type { AxiosManager } from '../core/AxiosManager';
+import type { RouteDef, HttpMethod, TypedRoutes } from '../types';
 
 /**
  * Hook for making API calls with loading and error states
@@ -17,9 +18,9 @@ export function useApiCall<
   }
 
   const [loading, setLoading] = React.useState(false);
-  const [error, setError] = React.useState<Error | null>(null);
-  const [data, setData] = React.useState<TResponse | null>(null);
-  const abortControllerRef = React.useRef<AbortController | null>(null);
+  const [error, setError] = React.useState(null as Error | null);
+  const [data, setData] = React.useState(null as TResponse | null);
+  const abortControllerRef = React.useRef(null as AbortController | null);
 
   const execute = React.useCallback(
     async (apiCall: () => Promise<TResponse>) => {
@@ -94,7 +95,9 @@ export function useAuth<TManager extends AxiosManager<any>>(manager: TManager) {
  * Context provider factory for React applications
  * React is optional - will throw if used without React installed
  */
-export function createAxiosContext<TGenerator extends RouteGenerator>() {
+export function createAxiosContext<
+  TGenerator extends Record<string, Record<string, RouteDef<string, HttpMethod, unknown, unknown, boolean, unknown>>>
+>() {
   let React: any;
   try {
     React = require('react');
@@ -104,10 +107,10 @@ export function createAxiosContext<TGenerator extends RouteGenerator>() {
 
   interface ContextValue {
     manager: AxiosManager<TGenerator>;
-    api: any; // Would be TypedRoutes<TGenerator> but avoiding circular deps
+    api: TypedRoutes<TGenerator>;
   }
 
-  const context = React.createContext<ContextValue | null>(null);
+  const context = React.createContext(null as ContextValue | null);
 
   function Provider({ 
     manager, 

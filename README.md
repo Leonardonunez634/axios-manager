@@ -69,23 +69,20 @@ Happy Coding!
 
 ## 🚀 Características
 
-- ✅ **TypeScript First**: Tipado fuerte con autocompletado inteligente
-- ✅ **Query Params Opcionales**: No más objetos vacíos obligatorios
-- ✅ **Path Bindings**: Soporte para rutas dinámicas con `{param}`
-- ✅ **Framework Agnostic**: Funciona con React, Vue, Node.js, Next.js, Astro
-- ✅ **Sin Dependencias de Estado**: No requiere Redux ni ningún estado específico
-- ✅ **Testing Ready**: Tests incluidos con Vitest
-- ✅ **ESM + CommonJS**: Compatible con ambos sistemas de módulos
-- ✅ **Hooks de React Opcionales**: Usa los hooks si quieres, no es obligatorio
+-  **TypeScript First**: Tipado fuerte con autocompletado inteligente
+-  **Query Params Opcionales**: No más objetos vacíos obligatorios
+-  **Path Bindings**: Soporte para rutas dinámicas con `{param}`
+-  **Framework Agnostic**: Funciona con React, Vue, Node.js, Next.js, Astro
+-  **Sin Dependencias de Estado**: No requiere Redux ni ningún estado específico
+-  **Testing Ready**: Tests incluidos con Vitest
+-  **ESM + CommonJS**: Compatible con ambos sistemas de módulos
+-  **Hooks de React Opcionales**: Usa los hooks si quieres, no es obligatorio
 
 ## 📦 Instalación
 
 ```bash
 npm install typed-axios-manager axios
-# o
-yarn add typed-axios-manager axios
-# o
-pnpm add typed-axios-manager axios
+
 ```
 
 ## 🔧 Uso Básico
@@ -93,7 +90,11 @@ pnpm add typed-axios-manager axios
 ### 1. Define tus rutas
 
 ```typescript
-import { createAxiosManager, createRouteConfig, get, post, put, del } from 'typed-axios-manager';
+import { createRouteConfig, get, post, put, del } from 'typed-axios-manager';
+
+type User = { name: string; email: string };
+type Product = { name: string; price: number };
+type ProductSearchRequest = { name: string; limit?: number; page: number };
 
 const apiRoutes = createRouteConfig({
   auth: {
@@ -102,17 +103,17 @@ const apiRoutes = createRouteConfig({
     me: get('/auth/me'),
   },
   users: {
-    getAll: get('/users'),
-    getById: get('/users/{id}'), // Ruta dinámica
-    create: post('/users'),
-    update: put('/users/{id}'),
+    getAll: get<User[]>('/users'),
+    getById: get<User>('/users/{id}'), // Ruta dinámica
+    create: post<{ name: string; email: string }, User>('/users'),
+    update: put<Partial<User>>('/users/{id}'),
     delete: del('/users/{id}'),
-    search: get('/users/search'), // Con query params
+    search: get<User[], { q: string; limit?: number }>('/users/search'), // Con query params
   },
   products: {
-    getAll: get('/products'),
-    getById: get('/products/{id}'),
-    search: get('/products/search'), // query params opcionales
+    getAll: get<Product[]>('/products'),
+    getById: get<Product>('/products/{id}'),
+    search: get<Product[], ProductSearchRequest>('/products/search'), // query params opcionales
   },
 });
 
@@ -137,31 +138,24 @@ const api = manager.createTypedRoutes(apiRoutes);
 ### 3. Usa las funciones
 
 ```typescript
-// ✅ Query params realmente opcionales
+// Query params realmente opcionales
 const users = await api.users.getAll(); // No requiere argumentos
 
-// ✅ Con query params cuando los necesites
+//  Con query params cuando los necesites
 const products = await api.products.search({ 
   q: 'laptop', 
   limit: 10,
   sort: 'price_asc' 
 });
 
-// ✅ Path bindings funcionan perfectamente
+//  Path bindings funcionan perfectamente
 const user = await api.users.getById({ id: 123 });
 
-// ✅ Body params bien tipados
+//  Body params bien tipados
 const newUser = await api.auth.login({
   email: 'user@example.com',
   password: 'password123'
 });
-
-// ✅ Combinación de todos los parámetros
-const updatedUser = await api.users.update(
-  { name: 'John Doe', email: 'john@example.com' }, // body
-  undefined, // query params opcionales
-  { id: 123 } // path bindings
-);
 ```
 
 ## 🧩 Ejemplos de Query Params
@@ -173,10 +167,10 @@ import { createRouteConfig, get, post, patch } from 'typed-axios-manager';
 
 const routes = createRouteConfig({
   users: {
-    search: get<{ q: string; limit?: number }>('/users/search'),
-    getById: get<{ include?: 'profile' | 'roles' }>('/users/{id}'),
-    create: post<{ name: string; email: string }, { sendWelcomeEmail?: boolean }>('/users'),
-    partialUpdate: patch<{ name?: string; email?: string }, { notify?: boolean }>('/users/{id}'),
+    search: get<unknown, { q: string; limit?: number }>('/users/search'),
+    getById: get<unknown, { include?: 'profile' | 'roles' }>('/users/{id}'),
+    create: post<{ name: string; email: string }, unknown, { sendWelcomeEmail?: boolean }>('/users'),
+    partialUpdate: patch<{ name?: string; email?: string }, unknown, { notify?: boolean }>('/users/{id}'),
   },
 });
 ```
@@ -191,7 +185,7 @@ await api.users.search();
 await api.users.search({ q: 'neo', limit: 10 });
 
 // GET con bindings y query
-await api.users.getById({ id: 1 }, { include: 'profile' });
+await api.users.getById({ include: 'profile' }, { id: 1 });
 
 // POST con body, sin query
 await api.users.create({ name: 'John', email: 'john@example.com' });
@@ -366,20 +360,6 @@ export default async function handler(req, res) {
 
 ## ⚙️ Configuración Avanzada
 
-### Response Wrapper Personalizado
-
-```typescript
-const manager = createAxiosManager({
-  baseURL: 'https://api.example.com',
-  responseWrapper: {
-    codeKey: 'status',
-    statusKey: 'httpStatus',
-    messageKey: 'msg',
-    dataKey: 'result'
-  }
-});
-```
-
 ### Headers Dinámicos
 
 ```typescript
@@ -406,52 +386,6 @@ const privateApi = createAxiosManager({
 
 const publicRoutes = publicApi.createTypedRoutes(publicRouteConfig);
 const privateRoutes = privateApi.createTypedRoutes(privateRouteConfig);
-```
-
-## 🧪 Testing
-
-```bash
-# Ejecutar tests
-npm test
-
-# Ver cobertura
-npm run test:coverage
-
-# UI interactivo
-npm run test:ui
-```
-
-Ejemplo de test:
-
-```typescript
-import { describe, it, expect } from 'vitest';
-import { createAxiosManager, createRouteConfig, get } from 'typed-axios-manager';
-
-describe('API Tests', () => {
-  const routes = createRouteConfig({
-    users: {
-      getAll: get('/users'),
-      getById: get('/users/{id}'),
-    },
-  });
-
-  const manager = createAxiosManager<typeof routes>({
-    baseURL: 'https://api.test.com',
-  });
-
-  const api = manager.createTypedRoutes(routes);
-
-  it('should not require query params', async () => {
-    // ✅ Esto compila sin errores
-    const users = await api.users.getAll();
-    expect(users).toBeDefined();
-  });
-
-  it('should work with path bindings', async () => {
-    const user = await api.users.getById({ id: 123 });
-    expect(user).toBeDefined();
-  });
-});
 ```
 
 ## 📚 API Reference
@@ -508,4 +442,4 @@ Crea una configuración de rutas tipadas.
 
 ## 📝 Licencia
 
-Este proyecto está bajo la Licencia MIT - ver el archivo [LICENSE](LICENSE) para detalles.
+Este proyecto está bajo la Licencia MIT.

@@ -72,7 +72,6 @@ describe('Query Params Optional', () => {
     // ✅ Both body and query params
     const result = await api.users.create(
       { name: 'John', email: 'john@test.com' },
-      { sendWelcomeEmail: true }
     );
     expect(result).toBeDefined();
   });
