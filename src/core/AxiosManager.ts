@@ -1,16 +1,14 @@
 import axios, { AxiosInstance, AxiosRequestConfig } from 'axios';
 import type {
-  RouteGenerator,
   TypedRoutes,
   RouteConfig,
   HttpMethod,
   PathBindings,
   QueryParams,
-  ResponseWrapper,
   AxiosManagerConfig,
 } from '../types/index.js';
 
-export class AxiosManager<TGenerator extends RouteGenerator> {
+export class AxiosManager<TGenerator extends Record<string, Record<string, unknown>>> {
   private axiosInstance: AxiosInstance;
   private config: Required<AxiosManagerConfig>;
 
@@ -19,13 +17,6 @@ export class AxiosManager<TGenerator extends RouteGenerator> {
       baseURL: config.baseURL || '',
       timeout: config.timeout || 5000,
       headers: config.headers || {},
-      responseWrapper: {
-        codeKey: 'code',
-        statusKey: 'httpStatus',
-        messageKey: 'message',
-        dataKey: 'data',
-        ...config.responseWrapper,
-      },
     };
 
     this.axiosInstance = axios.create({
@@ -47,13 +38,13 @@ export class AxiosManager<TGenerator extends RouteGenerator> {
   }
 
   // Crear funciones para un módulo
-  private createModuleFunctions<TModule extends Record<string, RouteConfig>>(
+  private createModuleFunctions<TModule extends Record<string, unknown>>(
     moduleConfig: TModule
   ) {
     const moduleFunctions = {} as any;
 
     for (const [functionName, routeConfig] of Object.entries(moduleConfig)) {
-      moduleFunctions[functionName] = this.createRouteFunction(routeConfig);
+      moduleFunctions[functionName] = this.createRouteFunction(routeConfig as RouteConfig);
     }
 
     return moduleFunctions;
@@ -68,41 +59,41 @@ export class AxiosManager<TGenerator extends RouteGenerator> {
 
     if (httpMethod === 'get' || httpMethod === 'delete') {
       if (hasBindings) {
-        const fn = async <T = any>(a: any, b?: any): Promise<ResponseWrapper<T>> => {
+        const fn = async <T = any>(a: any, b?: any): Promise<T> => {
           const queryParams = b === undefined ? undefined : a;
           const bindings = b === undefined ? a : b;
           const finalPath = this.bindPath(path, bindings);
           const config: AxiosRequestConfig = { method: httpMethod, url: finalPath, params: queryParams };
           const response = await this.axiosInstance.request(config);
-          return this.wrapResponse(response.data);
+          return response.data as T;
         };
         return fn as any;
       } else {
-        const fn = async <T = any>(queryParams?: QueryParams): Promise<ResponseWrapper<T>> => {
+        const fn = async <T = any>(queryParams?: QueryParams): Promise<T> => {
           const finalPath = path;
           const config: AxiosRequestConfig = { method: httpMethod, url: finalPath, params: queryParams };
           const response = await this.axiosInstance.request(config);
-          return this.wrapResponse(response.data);
+          return response.data as T;
         };
         return fn as any;
       }
     } else {
       if (hasBindings) {
-        const fn = async <T = any>(body: any, a: any, b?: any): Promise<ResponseWrapper<T>> => {
+        const fn = async <T = any>(body: any, a: any, b?: any): Promise<T> => {
           const queryParams = b === undefined ? undefined : a;
           const bindings = b === undefined ? a : b;
           const finalPath = this.bindPath(path, bindings);
           const config: AxiosRequestConfig = { method: httpMethod, url: finalPath, data: body, params: queryParams };
           const response = await this.axiosInstance.request(config);
-          return this.wrapResponse(response.data);
+          return response.data as T;
         };
         return fn as any;
       } else {
-        const fn = async <T = any>(body: any, queryParams?: QueryParams): Promise<ResponseWrapper<T>> => {
+        const fn = async <T = any>(body: any, queryParams?: QueryParams): Promise<T> => {
           const finalPath = path;
           const config: AxiosRequestConfig = { method: httpMethod, url: finalPath, data: body, params: queryParams };
           const response = await this.axiosInstance.request(config);
-          return this.wrapResponse(response.data);
+          return response.data as T;
         };
         return fn as any;
       }
@@ -121,23 +112,7 @@ export class AxiosManager<TGenerator extends RouteGenerator> {
     return finalPath;
   }
 
-  // Wrap de respuesta según configuración
-  private wrapResponse<T>(data: any): ResponseWrapper<T> {
-    const { responseWrapper } = this.config;
-    
-    // Si ya tiene la estructura esperada, devolver tal cual
-    if (data && typeof data === 'object' && responseWrapper.dataKey && responseWrapper.dataKey in data) {
-      return data;
-    }
-
-    // Si no, crear wrapper por defecto
-    return {
-      code: 'SUCCESS',
-      httpStatus: 200,
-      message: 'OK',
-      data: data as T,
-    };
-  }
+  
 
   // Métodos de utilidad
   setHeader(key: string, value: string): void {
@@ -158,7 +133,7 @@ export class AxiosManager<TGenerator extends RouteGenerator> {
 }
 
 // Factory function para crear instancias
-export function createAxiosManager<TGenerator extends RouteGenerator>(
+export function createAxiosManager<TGenerator extends Record<string, Record<string, unknown>>>(
   config?: AxiosManagerConfig
 ): AxiosManager<TGenerator> {
   return new AxiosManager<TGenerator>(config);

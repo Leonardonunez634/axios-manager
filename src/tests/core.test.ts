@@ -31,13 +31,13 @@ describe('AxiosManager Core', () => {
   const routes = createRouteConfig({
     users: {
       getAll: get('/users'),
-      getById: get('/users/{id}'),
+      getById: get<unknown, { include?: 'profile' | 'roles' }>('/users/{id}'),
       create: post('/users'),
       update: put('/users/{id}'),
       delete: del('/users/{id}'),
-      search: get('/users/search'),
-      partialUpdate: patch('/users/{id}'),
-      updateProfile: patch('/users/profile'),
+      search: get<unknown, { q: string; limit?: number }>('/users/search'),
+      partialUpdate: patch<{ name: string }, unknown, { sendEmail?: boolean }>('/users/{id}'),
+      updateProfile: patch<{ displayName: string }, unknown, { notify?: boolean }>('/users/profile'),
     },
     auth: {
       login: post('/auth/login'),
@@ -92,7 +92,7 @@ describe('AxiosManager Core', () => {
 
     it('should work with optional query params and bindings', async () => {
       // ✅ Both optional
-      const result = await api.users.getById({ id: 123 }, { include: 'profile' });
+      const result = await api.users.getById({ include: 'profile' }, { id: 123 });
       expect(result).toBeDefined();
       expect(result.data.success).toBe(true);
     });
@@ -180,17 +180,5 @@ describe('AxiosManager Core', () => {
     });
   });
 
-  describe('Response Wrapper', () => {
-    it('should wrap responses correctly', async () => {
-      const result = await api.users.getAll();
-      
-      expect(result).toHaveProperty('code');
-      expect(result).toHaveProperty('httpStatus');
-      expect(result).toHaveProperty('message');
-      expect(result).toHaveProperty('data');
-      expect(result.code).toBe('SUCCESS');
-      expect(result.httpStatus).toBe(200);
-      expect(result.message).toBe('OK');
-    });
-  });
+  
 });

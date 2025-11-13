@@ -1,5 +1,4 @@
 import type { AxiosManager } from '../core/AxiosManager';
-import type { RouteGenerator, ResponseWrapper } from '../types';
 
 /**
  * Hook for making API calls with loading and error states
@@ -23,7 +22,7 @@ export function useApiCall<
   const abortControllerRef = React.useRef<AbortController | null>(null);
 
   const execute = React.useCallback(
-    async (apiCall: () => Promise<ResponseWrapper<TResponse>>) => {
+    async (apiCall: () => Promise<TResponse>) => {
       setLoading(true);
       setError(null);
       
@@ -36,9 +35,10 @@ export function useApiCall<
       abortControllerRef.current = controller;
 
       try {
-        const response = await apiCall();
-        setData(response.data);
-        return response.data;
+        const response = await apiCall() as any;
+        const payload = response && typeof response === 'object' && 'data' in response ? response.data : response;
+        setData(payload);
+        return payload;
       } catch (err) {
         if (err instanceof Error && err.name !== 'AbortError') {
           setError(err);

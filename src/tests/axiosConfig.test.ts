@@ -26,12 +26,13 @@ describe('Axios request configuration', () => {
   const routes = createRouteConfig({
     users: {
       getAll: get('/users'),
-      search: get<{ q: string; limit?: number }>('/users/search'),
-      getById: get<{ include?: 'profile' | 'roles' }>('/users/{id}'),
+      search: get<unknown, { q: string; limit?: number }>('/users/search'),
+      getByIdOnlyBinding: get<unknown>('/users/{id}'),
+      getById: get<unknown, { include?: 'profile' | 'roles' }>('/users/{id}'),
       delete: del('/users/{id}'),
-      create: post<{ name: string; email: string }, { sendWelcomeEmail?: boolean }>('/users'),
+      create: post<{ name: string; email: string }, unknown, { sendWelcomeEmail?: boolean }>('/users'),
       update: put<{ name: string; email: string }>('/users/{id}'),
-      partialUpdate: patch<{ name?: string }, { notify?: boolean }>('/users/{id}'),
+      partialUpdate: patch<{ name?: string }, unknown, { notify?: boolean }>('/users/{id}'),
     },
   });
 
@@ -59,14 +60,14 @@ describe('Axios request configuration', () => {
   });
 
   it('GET with bindings only', async () => {
-    await api.users.getById({ id: 42 });
+    await api.users.getByIdOnlyBinding({ id: 42 });
     expect(lastConfig.method).toBe('get');
     expect(lastConfig.url).toBe('/users/42');
     expect(lastConfig.params).toBeUndefined();
   });
 
   it('GET with query and bindings (order: query, bindings)', async () => {
-    await (api.users.getById as any)({ include: 'profile' }, { id: 7 });
+    await api.users.getById({ include: 'profile' }, { id: 7 });
     expect(lastConfig.method).toBe('get');
     expect(lastConfig.url).toBe('/users/7');
     expect(lastConfig.params).toEqual({ include: 'profile' });
@@ -99,7 +100,7 @@ describe('Axios request configuration', () => {
   });
 
   it('PUT with body and bindings', async () => {
-    await (api.users.update as any)({ name: 'Jane', email: 'jane@example.com' }, { id: 3 });
+    await api.users.update({ name: 'Jane', email: 'jane@example.com' }, { id: 3 });
     expect(lastConfig.method).toBe('put');
     expect(lastConfig.url).toBe('/users/3');
     expect(lastConfig.data).toEqual({ name: 'Jane', email: 'jane@example.com' });
@@ -107,11 +108,10 @@ describe('Axios request configuration', () => {
   });
 
   it('PATCH with body, query and bindings (order: body, query, bindings)', async () => {
-    await (api.users.partialUpdate as any)({ name: 'Neo' }, { notify: true }, { id: 99 });
+    await api.users.partialUpdate({ name: 'Neo' }, { notify: true }, { id: 99 });
     expect(lastConfig.method).toBe('patch');
     expect(lastConfig.url).toBe('/users/99');
     expect(lastConfig.data).toEqual({ name: 'Neo' });
     expect(lastConfig.params).toEqual({ notify: true });
   });
 });
-

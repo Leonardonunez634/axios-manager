@@ -5,11 +5,9 @@ export { AxiosManager, createAxiosManager } from './core/AxiosManager';
 export type {
   HttpMethod,
   RouteConfig,
-  RouteGenerator,
   TypedRoutes,
   QueryParams,
   PathBindings,
-  ResponseWrapper,
   AxiosManagerConfig,
   FetchFunction,
   FetchFunctionWithBody,

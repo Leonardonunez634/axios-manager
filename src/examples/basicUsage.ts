@@ -1,5 +1,21 @@
 import { createAxiosManager, createRouteConfig, get, post, put, del } from '../index';
 
+
+interface UserTest {
+  name:string,
+  email:string,
+}
+
+interface ProductTest {
+  name:string,
+  price:number,
+}
+
+interface ProductSearchRequest {
+  name:string,
+  limit?: number,
+  page: number,
+}
 // Definir las rutas con el helper
 const apiRoutes = createRouteConfig({
   auth: {
@@ -10,18 +26,19 @@ const apiRoutes = createRouteConfig({
   },
   users: {
     getAll: get('/users'),
+    getAllWithQuery: get<UserTest,{ limit?: number; offset?: number }>('/users'),
     getById: get('/users/{id}'),
     create: post('/users'),
     update: put('/users/{id}'),
     delete: del('/users/{id}'),
   },
   products: {
-    getAll: get('/products'),
-    getById: get('/products/{id}'),
+    getAll: get<ProductTest[]>('/products'),
+    getById: get<ProductTest>('/products/{id}'),
     create: post('/products'),
-    update: put('/products/{id}'),
+    update: put<Partial<ProductTest>>('/products/{id}'),
     delete: del('/products/{id}'),
-    search: get<{ q: string; limit?: number }>('/products/search'),
+    search: get<ProductTest[], ProductSearchRequest>('/products/search'),
   },
 });
 
@@ -40,13 +57,16 @@ const api = manager.createTypedRoutes(apiRoutes);
 // 1. ✅ Query params realmente opcionales
 async function examples() {
   // Sin query params - NO requiere argumentos
-  const users = await api.users.getAll();
-  
+  const users = await api.users.getAll<UserTest[]>();
+  // users es de tipo {name:"user"}[]
+  const usersWithQuery = await api.users.getAllWithQuery({ limit: 10, offset: 0 });
   // Con query params - TypeScript infiere que necesitas el objeto
-  const products = await api.products.search({ q: 'laptop', limit: 10 });
+  const products = await api.products.search({ name: 'laptop', page: 1 });
+  // products es de tipo {name:"product"}[]
   
   // 2. ✅ Path bindings funcionan correctamente
   const user = await api.users.getById({ id: 123 });
+  // user es de tipo {name:"user"}
   
   // 3. ✅ Body params bien tipados
   const newUser = await api.auth.login({
@@ -60,8 +80,6 @@ async function examples() {
     { id: 123 }
   );
 }
-
-api.products.search()
 // Exportar para uso en toda la aplicación
 export { manager, api };
 export type { ApiRoutes };

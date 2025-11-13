@@ -1,6 +1,11 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { createAxiosManager, createRouteConfig, get, post } from '../index';
-import type { AxiosInstance } from 'axios';
+
+interface UserSearchParams {
+  name:string,
+  limit?: number,
+  page: number,
+}
 
 // Mock axios
 vi.mock('axios', () => ({
@@ -20,8 +25,9 @@ describe('Query Params Optional', () => {
   const routes = createRouteConfig({
     users: {
       getAll: get('/users'),
-      getById: get('/users/{id}'),
+      getById: get<unknown, { include?: 'profile' | 'roles' }>('/users/{id}'),
       search: get('/users/search'),
+      searchWithParams: get<unknown, UserSearchParams>('/users/search'),
       create: post('/users'),
     },
   });
@@ -40,7 +46,7 @@ describe('Query Params Optional', () => {
 
   it('should accept query params when provided', async () => {
     // ✅ This should also work
-    const result = await api.users.search({ q: 'test', limit: 10 });
+    const result = await api.users.searchWithParams({ name: 'test', limit: 10, page: 1 });
     expect(result).toBeDefined();
   });
 
@@ -52,7 +58,7 @@ describe('Query Params Optional', () => {
 
   it('should work with optional query params and bindings', async () => {
     // ✅ Both optional
-    const result = await api.users.getById({ id: 123 }, { include: 'profile' });
+    const result = await api.users.getById({ include: 'profile' }, { id: 123 });
     expect(result).toBeDefined();
   });
 
