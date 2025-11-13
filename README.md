@@ -3,7 +3,7 @@
 Un gestor de axios fuertemente tipado con autocompletado inteligente, soporte para rutas dinámicas y parámetros de consulta opcionales.
 
 Comentario del Creador:
-Por que cree este typed managed?
+Por que cree este typed manager?
 Cuando inicie el camino en la programacion, me incertaron en la mente que hay que hacer las cosas de la manera más 
 eficiente posible. Siempre buscar optimizar el codigo, optimizar funciones, pero tambien nuestra forma de codear.
 Hoy con la IA podemos ser muy eficientes, pero no hay que dejar de crear las herramientas que mantengan organizado
@@ -42,12 +42,12 @@ Despues conoci React - con sus miles de componentes (los que yo creaba) + Axios
 Y facilmente empece a crear axios.get("y un path") en un componente, y luego usar en otro, y asi sucesivamente.
 
 Que archivo use? En que componente esta? en un child-component del form?
-Organizarme es fundamental. Los proyectos grandes son requieren que seamos desarrolladores organizados.
+Organizarme es fundamental. Los proyectos grandes requieren que seamos desarrolladores organizados.
 
 En mi experiencia pase por Redux, Zustand, librerias que me gustaban (y gustan) mucho por la organizacion
 Aunque el que tiene que mejorar en organizacion soy yo xd, me inspire en la forma en la que ellos tienen sus generadores.
 
-Dije esto, para un axios, estaria barbaro. 
+Dije: esto, para un axios, estaria barbaro. 
 Empece a probar, trate varias versiones, y ahora me siento lo suficientemente confiado para mostrar este mini proyecto.
 Lo tengo funcionando en 2 proyectos. Esta es la primera version que subo porque quiero que sea una dependencia en el proyecto (no un conjunto de archivos dentro de /helper)
 
