@@ -2,6 +2,62 @@
 
 Un gestor de axios fuertemente tipado con autocompletado inteligente, soporte para rutas dinámicas y parámetros de consulta opcionales.
 
+Comentario del Creador:
+Por que cree este typed managed?
+Cuando inicie el camino en la programacion, me incertaron en la mente que hay que hacer las cosas de la manera más 
+eficiente posible. Siempre buscar optimizar el codigo, optimizar funciones, pero tambien nuestra forma de codear.
+Hoy con la IA podemos ser muy eficientes, pero no hay que dejar de crear las herramientas que mantengan organizado
+nuestros proyecto y mejorar nuestra experiencia de desarrollo.
+
+Arranque creando archivos para todos los path. Rapidamente los archivos se venia en un sin fin de path.
+Algo como asi:
+const PATH_CREATE_USER = "/api/user/"
+const PATH_GET_USER = (id: number)=>`/api/user/${id}`
+const PATH_UPDATE_USER = (id: number)=> `/api/user/${id}`
+...
+
+Y mientras buscaba proyectos mas grandes, surgio la necesidad de organizar esto diferente
+Probe con una carpeta API y archivos x endpoint
+api/
+├── auth/
+│   ├── login.ts
+│   ├── register.ts
+│   ├── me.ts
+├── users/
+│   ├── getAll.ts
+│   ├── getById.ts
+│   ├── create.ts
+│   ├── update.ts
+│   ├── delete.ts
+│   ├── search.ts
+├── products/
+│   ├── getAll.ts
+│   ├── getById.ts
+│   ├── search.ts
+
+Pero no resolvia los archivos, y crecian sin parar nuevamente. Sin contar que cuando empezas, tenes poca organizacion. Cambias objetos, se te rompen request y despues anda a acordarte donde esta y que cambio.
+Cosas como tener que cambiar el path en MIL lugares, cuando deberia cambiarlo en 1.
+
+Despues conoci React - con sus miles de componentes (los que yo creaba) + Axios
+Y facilmente empece a crear axios.get("y un path") en un componente, y luego usar en otro, y asi sucesivamente.
+
+Que archivo use? En que componente esta? en un child-component del form?
+Organizarme es fundamental. Los proyectos grandes son requieren que seamos desarrolladores organizados.
+
+En mi experiencia pase por Redux, Zustand, librerias que me gustaban (y gustan) mucho por la organizacion
+Aunque el que tiene que mejorar en organizacion soy yo xd, me inspire en la forma en la que ellos tienen sus generadores.
+
+Dije esto, para un axios, estaria barbaro. 
+Empece a probar, trate varias versiones, y ahora me siento lo suficientemente confiado para mostrar este mini proyecto.
+Lo tengo funcionando en 2 proyectos. Esta es la primera version que subo porque quiero que sea una dependencia en el proyecto (no un conjunto de archivos dentro de /helper)
+
+La idea es tener mas organizado los proyectos y la conexion con el backend, en un solo archivo
+Una unica fuente de la verdad
+Menos erroes, mas proyectos, mas rapido, mas $$$$ xd
+
+Si a alguien le sirve, encantado de saberlo.
+Happy Coding! 
+
 ## 🚀 Características
 
 - ✅ **TypeScript First**: Tipado fuerte con autocompletado inteligente
@@ -97,6 +153,124 @@ const updatedUser = await api.users.update(
   undefined, // query params opcionales
   { id: 123 } // path bindings
 );
+```
+
+## 🧩 Ejemplos de Query Params
+
+### Declarar rutas con tipos de query
+
+```typescript
+import { createRouteConfig, get, post, patch } from 'typed-axios-manager';
+
+const routes = createRouteConfig({
+  users: {
+    search: get<{ q: string; limit?: number }>('/users/search'),
+    getById: get<{ include?: 'profile' | 'roles' }>('/users/{id}'),
+    create: post<{ name: string; email: string }, { sendWelcomeEmail?: boolean }>('/users'),
+    partialUpdate: patch<{ name?: string; email?: string }, { notify?: boolean }>('/users/{id}'),
+  },
+});
+```
+
+### Llamadas con y sin query
+
+```typescript
+// GET sin query
+await api.users.search();
+
+// GET con query tipada
+await api.users.search({ q: 'neo', limit: 10 });
+
+// GET con bindings y query
+await api.users.getById({ id: 1 }, { include: 'profile' });
+
+// POST con body, sin query
+await api.users.create({ name: 'John', email: 'john@example.com' });
+
+// POST con body y query
+await api.users.create(
+  { name: 'John', email: 'john@example.com' },
+  { sendWelcomeEmail: true }
+);
+
+// PATCH con body y bindings
+await api.users.partialUpdate({ name: 'John' }, { id: 1 });
+
+// PATCH con body, query y bindings
+await api.users.partialUpdate(
+  { name: 'John' },
+  { notify: true },
+  { id: 1 }
+);
+```
+
+## � Orden de argumentos y bindings
+
+Los helpers aceptan argumentos en un orden consistente que determina cómo se construye la `request` de axios:
+
+```typescript
+// GET / DELETE
+// Sin bindings: (query?)
+await api.users.getAll();
+await api.users.search({ q: 'neo', limit: 10 });
+
+// Con bindings: (bindings) o (query, bindings)
+await api.users.getById({ id: 1 });
+await api.users.getById({ include: 'profile' }, { id: 1 });
+
+// POST / PUT / PATCH
+// Sin bindings: (body, query?)
+await api.users.create({ name: 'John', email: 'john@example.com' });
+await api.users.create({ name: 'John', email: 'john@example.com' }, { sendWelcomeEmail: true });
+
+// Con bindings: (body, bindings) o (body, query, bindings)
+await api.users.update({ name: 'Jane' }, { id: 3 });
+await api.users.partialUpdate({ name: 'Neo' }, { notify: true }, { id: 99 });
+```
+
+- `bindings` reemplaza variables de ruta `{id}` en el `url` (ver `src/core/AxiosManager.ts:113-121`).
+- `query` se envía como `axios` `params` (ver GET/DELETE en `src/core/AxiosManager.ts:75-86`).
+- `body` se envía como `axios` `data` (ver POST/PUT/PATCH en `src/core/AxiosManager.ts:101-106`).
+
+Esto permite que las firmas sean limpias y que el `path` se infiera directamente del argumento de la función, evitando repetirlo en los genéricos.
+
+## �📘 Uso de TypeScript
+
+### Tipar rutas y obtener funciones tipadas
+
+```typescript
+const routes = createRouteConfig({
+  products: {
+    getAll: get('/products'),
+    search: get<{ q: string; limit?: number }>('/products/search'),
+  },
+});
+
+type Routes = typeof routes;
+const manager = createAxiosManager<Routes>({ baseURL: 'https://api.example.com' });
+const api = manager.createTypedRoutes(routes);
+```
+
+### Tipar la respuesta de las llamadas
+
+```typescript
+type Product = { id: number; name: string };
+
+const products = await api.products.getAll<Product[]>();
+// products.data: Product[]
+
+const searched = await api.products.search<Product[]>({ q: 'laptop', limit: 5 });
+// searched.data: Product[]
+```
+
+### Tipos auxiliares disponibles
+
+```typescript
+import type { QueryParams, PathBindings, ResponseWrapper } from 'typed-axios-manager';
+
+const qp: QueryParams = { q: 'neo', limit: 10 };
+const pb: PathBindings = { id: 1 };
+const res: ResponseWrapper<{ ok: boolean }> = { code: 'SUCCESS', httpStatus: 200, message: 'OK', data: { ok: true } };
 ```
 
 ## 🎯 Uso con React (Opcional)
@@ -326,8 +500,3 @@ Crea una configuración de rutas tipadas.
 ## 📝 Licencia
 
 Este proyecto está bajo la Licencia MIT - ver el archivo [LICENSE](LICENSE) para detalles.
-
-## 🙏 Agradecimientos
-
-- [Axios](https://github.com/axios/axios) por el increíble cliente HTTP
-- La comunidad de TypeScript por hacer el tipado tan poderoso

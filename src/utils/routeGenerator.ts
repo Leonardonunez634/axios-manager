@@ -22,32 +22,27 @@ export function route<Path extends string, Method extends 'get' | 'post' | 'put'
 /**
  * Common HTTP method shortcuts
  */
-export function get<TPath extends string>(path: TPath): RouteDef<TPath, 'get', never, never, false>;
-export function get<TPath extends string, TQuery>(path: TPath): RouteDef<TPath, 'get', never, TQuery, true>;
+export function get<TQuery = never, TPath extends string = string>(path: TPath): RouteDef<TPath, 'get', never, TQuery, [TQuery] extends [never] ? false : true>;
 export function get(path: string) {
   return { path, httpMethod: 'get' } as any;
 }
 
-export function post<TPath extends string, TBody = unknown>(path: TPath): RouteDef<TPath, 'post', TBody, never, false>;
-export function post<TPath extends string, TQuery, TBody = unknown>(path: TPath): RouteDef<TPath, 'post', TBody, TQuery, true>;
+export function post<TBody = unknown, TQuery = never, TPath extends string = string>(path: TPath): RouteDef<TPath, 'post', TBody, TQuery, [TQuery] extends [never] ? false : true>;
 export function post(path: string) {
   return { path, httpMethod: 'post' } as any;
 }
 
-export function put<TPath extends string, TBody = unknown>(path: TPath): RouteDef<TPath, 'put', TBody, never, false>;
-export function put<TPath extends string, TQuery, TBody = unknown>(path: TPath): RouteDef<TPath, 'put', TBody, TQuery, true>;
+export function put<TBody = unknown, TQuery = never, TPath extends string = string>(path: TPath): RouteDef<TPath, 'put', TBody, TQuery, [TQuery] extends [never] ? false : true>;
 export function put(path: string) {
   return { path, httpMethod: 'put' } as any;
 }
 
-export function del<TPath extends string>(path: TPath): RouteDef<TPath, 'delete', never, never, false>;
-export function del<TPath extends string, TQuery>(path: TPath): RouteDef<TPath, 'delete', never, TQuery, true>;
+export function del<TQuery = never, TPath extends string = string>(path: TPath): RouteDef<TPath, 'delete', never, TQuery, [TQuery] extends [never] ? false : true>;
 export function del(path: string) {
   return { path, httpMethod: 'delete' } as any;
 }
 
-export function patch<TPath extends string, TBody = unknown>(path: TPath): RouteDef<TPath, 'patch', TBody, never, false>;
-export function patch<TPath extends string, TQuery, TBody = unknown>(path: TPath): RouteDef<TPath, 'patch', TBody, TQuery, true>;
+export function patch<TBody = unknown, TQuery = never, TPath extends string = string>(path: TPath): RouteDef<TPath, 'patch', TBody, TQuery, [TQuery] extends [never] ? false : true>;
 export function patch(path: string) {
   return { path, httpMethod: 'patch' } as any;
 }
