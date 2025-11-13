@@ -5,19 +5,25 @@ Un gestor de axios fuertemente tipado con autocompletado inteligente, soporte pa
 Comentario del Creador:
 Por que cree este typed manager?
 Cuando inicie el camino en la programacion, me incertaron en la mente que hay que hacer las cosas de la manera más 
-eficiente posible. Siempre buscar optimizar el codigo, optimizar funciones, pero tambien nuestra forma de codear.
+eficiente posible. Siempre buscar optimizar el codigo,funciones pero tambien nuestra forma de codear.
 Hoy con la IA podemos ser muy eficientes, pero no hay que dejar de crear las herramientas que mantengan organizado
 nuestros proyecto y mejorar nuestra experiencia de desarrollo.
 
-Arranque creando archivos para todos los path. Rapidamente los archivos se venia en un sin fin de path.
-Algo como asi:
+Arranque creando archivos para todos los path. 
+Rapidamente se convirtio en un sin fin de constantes.
+
+Un claro ejemplo que seguramente todos recordaremos:
+```
 const PATH_CREATE_USER = "/api/user/"
 const PATH_GET_USER = (id: number)=>`/api/user/${id}`
 const PATH_UPDATE_USER = (id: number)=> `/api/user/${id}`
 ...
+```
 
 Y mientras buscaba proyectos mas grandes, surgio la necesidad de organizar esto diferente
 Probe con una carpeta API y archivos x endpoint
+
+```
 api/
 ├── auth/
 │   ├── login.ts
@@ -34,8 +40,9 @@ api/
 │   ├── getAll.ts
 │   ├── getById.ts
 │   ├── search.ts
+```
 
-Pero no resolvia los archivos, y crecian sin parar nuevamente. Sin contar que cuando empezas, tenes poca organizacion. Cambias objetos, se te rompen request y despues anda a acordarte donde esta y que cambio.
+Pero no resolvia el problema de las constantes, y los archivos crecian sin parar. Sin contar que cuando empezas, tenes poca organizacion. Cambias objetos, se te rompen request y despues anda a acordarte donde esta y que cambio.
 Cosas como tener que cambiar el path en MIL lugares, cuando deberia cambiarlo en 1.
 
 Despues conoci React - con sus miles de componentes (los que yo creaba) + Axios
@@ -44,16 +51,18 @@ Y facilmente empece a crear axios.get("y un path") en un componente, y luego usa
 Que archivo use? En que componente esta? en un child-component del form?
 Organizarme es fundamental. Los proyectos grandes requieren que seamos desarrolladores organizados.
 
-En mi experiencia pase por Redux, Zustand, librerias que me gustaban (y gustan) mucho por la organizacion
-Aunque el que tiene que mejorar en organizacion soy yo xd, me inspire en la forma en la que ellos tienen sus generadores.
+En mi experiencia pase por Redux, Zustand, librerias que me gustan mucho por la organizacion
+Aunque el que tiene que mejorar en organizacion soy yo, me inspire en la forma en la que ellos tienen sus generadores.
 
 Dije: esto, para un axios, estaria barbaro. 
-Empece a probar, trate varias versiones, y ahora me siento lo suficientemente confiado para mostrar este mini proyecto.
-Lo tengo funcionando en 2 proyectos. Esta es la primera version que subo porque quiero que sea una dependencia en el proyecto (no un conjunto de archivos dentro de /helper)
+
+Empece a probar, genere varias versiones, y ahora me siento lo suficientemente confiado para mostrar este invento.
+
+Lo tengo funcionando en 2 proyectos. Esta es la primera version que subo porque quiero que sea una dependencia en y no un conjunto de archivos dentro de /helper.
 
 La idea es tener mas organizado los proyectos y la conexion con el backend, en un solo archivo
 Una unica fuente de la verdad
-Menos erroes, mas proyectos, mas rapido, mas $$$$ xd
+Menos erroes, mas proyectos, mas rapido, mas $$$$
 
 Si a alguien le sirve, encantado de saberlo.
 Happy Coding! 
