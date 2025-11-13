@@ -1,6 +1,6 @@
 {
   "name": "typed-axios-manager",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Type-safe axios manager with autocomplete and path binding support",
   "type": "module",
   "main": "dist/index.js",
