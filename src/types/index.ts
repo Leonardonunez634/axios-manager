@@ -16,9 +16,6 @@ export type QueryParams = Record<string, string | number | boolean | undefined>;
 // Tipos para binding de rutas
 export type PathBindings = Record<string, string | number>;
 
-// Response wrapper configurable
-// Eliminado wrapper rígido; el retorno se tipa libremente por ruta y por llamada
-
 // Configuración del generador
 export type HasBindings<Path extends string> = Path extends `${string}{${string}}${string}` ? true : false;
 
@@ -30,8 +27,6 @@ export interface RouteDef<Path extends string, Method extends HttpMethod, TBody 
   __hasQuery: HasQuery;
   __response: TResponse;
 }
-
-// Evitar alias que ensanchan tipos: trabajar directamente con los tipos específicos inferidos
 
 // Funciones de fetch mejoradas - versión simplificada que realmente funciona
 export type FetchFunction<TResponse = any> = (

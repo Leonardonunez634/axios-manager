@@ -14,7 +14,7 @@ export type {
 } from './types';
 
 // Utils exports
-export { createRouteConfig, route, get, post, put, del, patch } from './utils/routeGenerator';
+export { createRouteConfig, route, get, post, put, del, patch, getBind, postBind, putBind, delBind, patchBind } from './utils/routeGenerator';
 
 // React exports (optional) moved to separate entry to simplify typecheck
 

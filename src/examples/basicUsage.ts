@@ -40,7 +40,7 @@ const apiRoutes = createRouteConfig({
     delete: del('/products/{id}'),
     search: get<ProductTest[], ProductSearchRequest>('/products/search'),
   },
-});
+} as const);
 
 // Crear el manager
 type ApiRoutes = typeof apiRoutes;
@@ -79,6 +79,8 @@ async function examples() {
     { name: 'John Doe', email: 'john@example.com' },
     { id: 123 }
   );
+
+  const getProductById = await api.products.getById({ id: 456 });
 }
 // Exportar para uso en toda la aplicación
 export { manager, api };

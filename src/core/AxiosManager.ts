@@ -1,14 +1,16 @@
 import axios, { AxiosInstance, AxiosRequestConfig } from 'axios';
 import type {
-  TypedRoutes,
-  RouteConfig,
+  AxiosManagerConfig,
+  MethodToFunction,
   HttpMethod,
   PathBindings,
   QueryParams,
-  AxiosManagerConfig,
+  RouteDef,
+  RouteModuleFunctions,
+  TypedRoutes
 } from '../types/index.js';
 
-export class AxiosManager<TGenerator extends Record<string, Record<string, unknown>>> {
+export class AxiosManager<TGenerator extends Record<string, Record<string, RouteDef<string, HttpMethod, unknown, unknown, boolean, unknown>>>> {
   private axiosInstance: AxiosInstance;
   private config: Required<AxiosManagerConfig>;
 
@@ -28,74 +30,79 @@ export class AxiosManager<TGenerator extends Record<string, Record<string, unkno
 
   // Método para crear las rutas tipadas
   createTypedRoutes(generator: TGenerator): TypedRoutes<TGenerator> {
-    const typedRoutes = {} as TypedRoutes<TGenerator>;
+    const typedRoutes = {} as Partial<TypedRoutes<TGenerator>>;
 
-    for (const [moduleName, moduleConfig] of Object.entries(generator)) {
-      (typedRoutes as any)[moduleName] = this.createModuleFunctions(moduleConfig);
+    for (const moduleName in generator) {
+      const key = moduleName as keyof TGenerator;
+      const moduleConfig = generator[key] as Record<string, RouteDef<string, HttpMethod, unknown, unknown, boolean, unknown>>;
+      const funcs = this.createModuleFunctions(moduleConfig);
+      (typedRoutes as TypedRoutes<TGenerator>)[key] = funcs as RouteModuleFunctions<TGenerator[typeof key]>;
     }
 
-    return typedRoutes;
+    return typedRoutes as TypedRoutes<TGenerator>;
   }
 
   // Crear funciones para un módulo
-  private createModuleFunctions<TModule extends Record<string, unknown>>(
+  private createModuleFunctions<TModule extends Record<string, RouteDef<string, HttpMethod, unknown, unknown, boolean, unknown>>>(
     moduleConfig: TModule
-  ) {
-    const moduleFunctions = {} as any;
+  ): RouteModuleFunctions<TModule> {
+    const moduleFunctions = {} as Partial<RouteModuleFunctions<TModule>>;
 
-    for (const [functionName, routeConfig] of Object.entries(moduleConfig)) {
-      moduleFunctions[functionName] = this.createRouteFunction(routeConfig as RouteConfig);
+    for (const functionName of Object.keys(moduleConfig) as (keyof TModule)[]) {
+      const routeConfig = moduleConfig[functionName];
+      const fn = this.createRouteFunction(routeConfig);
+      (moduleFunctions as RouteModuleFunctions<TModule>)[functionName] = fn as RouteModuleFunctions<TModule>[typeof functionName];
     }
 
-    return moduleFunctions;
+    return moduleFunctions as RouteModuleFunctions<TModule>;
   }
 
   // Crear función individual para una ruta
-  private createRouteFunction<TMethod extends HttpMethod>(
-    routeConfig: RouteConfig
-  ) {
+  private createRouteFunction<R extends RouteDef<string, HttpMethod, unknown, unknown, boolean, unknown>>(
+    routeConfig: R
+  ): MethodToFunction<R> {
     const { path, httpMethod } = routeConfig;
     const hasBindings = /\{[^}]+\}/.test(path);
 
     if (httpMethod === 'get' || httpMethod === 'delete') {
       if (hasBindings) {
-        const fn = async <T = any>(a: any, b?: any): Promise<T> => {
+        const fn = async <T = unknown>(a: unknown, b?: unknown): Promise<T> => {
           const queryParams = b === undefined ? undefined : a;
           const bindings = b === undefined ? a : b;
-          const finalPath = this.bindPath(path, bindings);
+          const finalPath = this.bindPath(path, bindings as PathBindings);
           const config: AxiosRequestConfig = { method: httpMethod, url: finalPath, params: queryParams };
           const response = await this.axiosInstance.request(config);
           return response.data as T;
         };
-        return fn as any;
+        return fn as unknown as MethodToFunction<R>;
       } else {
-        const fn = async <T = any>(queryParams?: QueryParams): Promise<T> => {
+        const fn = async <T = unknown>(queryParams?: QueryParams): Promise<T> => {
           const finalPath = path;
           const config: AxiosRequestConfig = { method: httpMethod, url: finalPath, params: queryParams };
           const response = await this.axiosInstance.request(config);
           return response.data as T;
         };
-        return fn as any;
+        return fn as unknown as MethodToFunction<R>;
       }
     } else {
       if (hasBindings) {
-        const fn = async <T = any>(body: any, a: any, b?: any): Promise<T> => {
+        const fn = async <T = unknown>(body: unknown, a: unknown, b?: unknown): Promise<T> => {
           const queryParams = b === undefined ? undefined : a;
           const bindings = b === undefined ? a : b;
-          const finalPath = this.bindPath(path, bindings);
+          const finalPath = this.bindPath(path, bindings as PathBindings);
           const config: AxiosRequestConfig = { method: httpMethod, url: finalPath, data: body, params: queryParams };
           const response = await this.axiosInstance.request(config);
           return response.data as T;
         };
-        return fn as any;
+        return fn as unknown as MethodToFunction<R>;
       } else {
-        const fn = async <T = any>(body: any, queryParams?: QueryParams): Promise<T> => {
+        const fn = async <T = unknown>(body: unknown, queryParams?: QueryParams): Promise<T> => {
           const finalPath = path;
           const config: AxiosRequestConfig = { method: httpMethod, url: finalPath, data: body, params: queryParams };
           const response = await this.axiosInstance.request(config);
           return response.data as T;
         };
-        return fn as any;
+        return fn as unknown as MethodToFunction<R>;
       }
     }
   }
@@ -133,7 +140,7 @@ export class AxiosManager<TGenerator extends Record<string, Record<string, unkno
 }
 
 // Factory function para crear instancias
-export function createAxiosManager<TGenerator extends Record<string, Record<string, unknown>>>(
+export function createAxiosManager<TGenerator extends Record<string, Record<string, RouteDef<string, HttpMethod, unknown, unknown, boolean, unknown>>>>(
   config?: AxiosManagerConfig
 ): AxiosManager<TGenerator> {
   return new AxiosManager<TGenerator>(config);
