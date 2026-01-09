@@ -70,6 +70,7 @@ Happy Coding!
 ## 🚀 Características
 
 -  **TypeScript First**: Tipado fuerte con autocompletado inteligente
+-  **Fluent API**: Definición de rutas clara y escalable que permite inferencia correcta de tipos
 -  **Query Params Opcionales**: No más objetos vacíos obligatorios
 -  **Path Bindings**: Soporte para rutas dinámicas con `{param}`
 -  **Framework Agnostic**: Funciona con React, Vue, Node.js, Next.js, Astro
@@ -98,22 +99,22 @@ type ProductSearchRequest = { name: string; limit?: number; page: number };
 
 const apiRoutes = createRouteConfig({
   auth: {
-    login: post('/auth/login'),
-    register: post('/auth/register'),
-    me: get('/auth/me'),
+    login: post('/auth/login').body<{ email: string; password: string }>().response<{ token: string }>(),
+    register: post('/auth/register').body<{ email: string; password: string }>(),
+    me: get('/auth/me').response<User>(),
   },
   users: {
-    getAll: get<User[]>('/users'),
-    getById: get<User>('/users/{id}'), // Ruta dinámica
-    create: post<{ name: string; email: string }, User>('/users'),
-    update: put<Partial<User>>('/users/{id}'),
+    getAll: get('/users').response<User[]>(),
+    getById: get('/users/{id}').response<User>(), // Ruta dinámica con inferencia de {id}
+    create: post('/users').body<{ name: string; email: string }>().response<User>(),
+    update: put('/users/{id}').body<Partial<User>>(),
     delete: del('/users/{id}'),
-    search: get<User[], { q: string; limit?: number }>('/users/search'), // Con query params
+    search: get('/users/search').query<{ q: string; limit?: number }>().response<User[]>(), // Con query params
   },
   products: {
-    getAll: get<Product[]>('/products'),
-    getById: get<Product>('/products/{id}'),
-    search: get<Product[], ProductSearchRequest>('/products/search'), // query params opcionales
+    getAll: get('/products').response<Product[]>(),
+    getById: get('/products/{id}').response<Product>(),
+    search: get('/products/search').query<ProductSearchRequest>().response<Product[]>(), // query params opcionales
   },
 });
 
@@ -167,10 +168,10 @@ import { createRouteConfig, get, post, patch } from 'typed-axios-manager';
 
 const routes = createRouteConfig({
   users: {
-    search: get<unknown, { q: string; limit?: number }>('/users/search'),
-    getById: get<unknown, { include?: 'profile' | 'roles' }>('/users/{id}'),
-    create: post<{ name: string; email: string }, unknown, { sendWelcomeEmail?: boolean }>('/users'),
-    partialUpdate: patch<{ name?: string; email?: string }, unknown, { notify?: boolean }>('/users/{id}'),
+    search: get('/users/search').query<{ q: string; limit?: number }>().response<unknown>(),
+    getById: get('/users/{id}').query<{ include?: 'profile' | 'roles' }>().response<unknown>(),
+    create: post('/users').body<{ name: string; email: string }>().query<{ sendWelcomeEmail?: boolean }>().response<unknown>(),
+    partialUpdate: patch('/users/{id}').body<{ name?: string; email?: string }>().query<{ notify?: boolean }>().response<unknown>(),
   },
 });
 ```
@@ -207,7 +208,28 @@ await api.users.partialUpdate(
 );
 ```
 
-## � Orden de argumentos y bindings
+## 💡 Evolución y Fluent API
+
+Originalmente, esta librería usaba genéricos directos como `get<Response>('/path')`. Sin embargo, esto causaba un problema en TypeScript: al especificar un tipo genérico (Response), TypeScript dejaba de inferir automáticamente el literal del path string.
+
+**El problema anterior:**
+```typescript
+// TypeScript infiere Path como 'string' genérico, perdiendo los params {id}
+get<Product>('/products/{id}') 
+// Resultado: api.products.getById() <- No pide argumentos
+```
+
+**La solución Fluent API:**
+```typescript
+// 1. Infiere el path primero ('/products/{id}')
+// 2. Añade tipos incrementalmente
+get('/products/{id}').response<Product>()
+// Resultado: api.products.getById({ id: 1 }) <- Correctamente tipado
+```
+
+Esta nueva sintaxis permite mantener la inferencia precisa de los parámetros de ruta mientras se definen fuertemente los tipos de respuesta, body y query params.
+
+## 📋 Orden de argumentos y bindings
 
 Los helpers aceptan argumentos en un orden consistente que determina cómo se construye la `request` de axios:
 
@@ -237,15 +259,17 @@ await api.users.partialUpdate({ name: 'Neo' }, { notify: true }, { id: 99 });
 
 Esto permite que las firmas sean limpias y que el `path` se infiera directamente del argumento de la función, evitando repetirlo en los genéricos.
 
-## �📘 Uso de TypeScript
+## 📘 Uso de TypeScript
 
 ### Tipar rutas y obtener funciones tipadas
 
 ```typescript
 const routes = createRouteConfig({
   products: {
-    getAll: get('/products'),
-    search: get<{ q: string; limit?: number }>('/products/search'),
+    // Definir respuesta en la configuración (Recomendado)
+    getAll: get('/products').response<Product[]>(),
+    // Definir query params
+    search: get('/products/search').query<{ q: string; limit?: number }>().response<Product[]>(),
   },
 });
 
@@ -254,16 +278,19 @@ const manager = createAxiosManager<Routes>({ baseURL: 'https://api.example.com' 
 const api = manager.createTypedRoutes(routes);
 ```
 
-### Tipar la respuesta de las llamadas
+### Tipar la respuesta al llamar (Override)
+
+Si no defines el tipo de respuesta en la configuración, o quieres sobrescribirlo:
 
 ```typescript
 type Product = { id: number; name: string };
 
+// Si la ruta se definió como: get('/products') -> response es unknown
 const products = await api.products.getAll<Product[]>();
-// products.data: Product[]
+// products: Product[]
 
-const searched = await api.products.search<Product[]>({ q: 'laptop', limit: 5 });
-// searched.data: Product[]
+// También funciona para sobrescribir el tipo definido
+const products = await api.products.getAll<CustomProductType[]>();
 ```
 
 ### Tipos auxiliares disponibles
@@ -398,7 +425,6 @@ Crea una nueva instancia del manager.
 - `baseURL?: string` - URL base para todas las peticiones
 - `timeout?: number` - Timeout en milisegundos (default: 5000)
 - `headers?: Record<string, string>` - Headers por defecto
-- `responseWrapper?: object` - Configuración del wrapper de respuesta
 
 **Retorna:** `AxiosManager<T>`
 

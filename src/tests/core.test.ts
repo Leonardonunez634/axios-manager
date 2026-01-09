@@ -37,13 +37,13 @@ describe('AxiosManager Core', () => {
   const routes = createRouteConfig({
     users: {
       getAll: get('/users'),
-      getById: get<ProductTest, { include?: 'profile' | 'roles' }>('/users/{id}'),
+      getById: get('/users/{id}').query<{ include?: 'profile' | 'roles' }>().response<ProductTest>(),
       create: post('/users'),
       update: put('/users/{id}'),
       delete: del('/users/{id}'),
-      search: get<unknown, { q: string; limit?: number }>('/users/search'),
-      partialUpdate: patch<{ name: string }, unknown, { sendEmail?: boolean }>('/users/{id}'),
-      updateProfile: patch<{ displayName: string }, unknown, { notify?: boolean }>('/users/profile'),
+      search: get('/users/search').query<{ q: string; limit?: number }>().response<unknown>(),
+      partialUpdate: patch('/users/{id}').body<{ name: string }>().query<{ sendEmail?: boolean }>().response<unknown>(),
+      updateProfile: patch('/users/profile').body<{ displayName: string }>().query<{ notify?: boolean }>().response<unknown>(),
     },
     auth: {
       login: post('/auth/login'),
@@ -159,8 +159,8 @@ describe('AxiosManager Core', () => {
 
     const routes2 = createRouteConfig({
       products: {
-        getById: get<ProductTest>('/products/{id}'),
-        getByIdWithQuery: get<ProductTest, { include?: 'profile' | 'roles' }>('/products/{id}'),
+        getById: get('/products/{id}').response<ProductTest>(),
+        getByIdWithQuery: get('/products/{id}').query<{ include?: 'profile' | 'roles' }>().response<ProductTest>(),
       },
     });
 

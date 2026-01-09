@@ -27,9 +27,11 @@ describe('bindPath without bindings branch', () => {
   const manager = createAxiosManager<typeof routes>({ baseURL: 'https://api.test.com' });
   const api = manager.createTypedRoutes(routes);
 
-  it('returns path unchanged when bindings are undefined', async () => {
-    const res = await (api.items.view as any)({ include: 'x' }, undefined);
-    expect(res.data.ok).toBe(true);
+  it('throws error when bindings are undefined for route with params', async () => {
+    // Expect the promise to reject with the validation error
+    await expect(
+      (api.items.view as any)({ include: 'x' }, undefined)
+    ).rejects.toThrow(/Missing required binding/);
   });
 });
 

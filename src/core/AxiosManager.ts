@@ -3,7 +3,6 @@ import type {
   AxiosManagerConfig,
   MethodToFunction,
   HttpMethod,
-  PathBindings,
   QueryParams,
   RouteDef,
   RouteModuleFunctions,
@@ -29,17 +28,17 @@ export class AxiosManager<TGenerator extends Record<string, Record<string, Route
   }
 
   // Método para crear las rutas tipadas
-  createTypedRoutes(generator: TGenerator): TypedRoutes<TGenerator> {
-    const typedRoutes = {} as Partial<TypedRoutes<TGenerator>>;
+  createTypedRoutes<TRoutes extends TGenerator>(generator: TRoutes): TypedRoutes<TRoutes> {
+    const typedRoutes = {} as Partial<TypedRoutes<TRoutes>>;
 
     for (const moduleName in generator) {
-      const key = moduleName as keyof TGenerator;
+      const key = moduleName as keyof TRoutes;
       const moduleConfig = generator[key] as Record<string, RouteDef<string, HttpMethod, unknown, unknown, boolean, unknown>>;
       const funcs = this.createModuleFunctions(moduleConfig);
-      (typedRoutes as TypedRoutes<TGenerator>)[key] = funcs as RouteModuleFunctions<TGenerator[typeof key]>;
+      (typedRoutes as TypedRoutes<TRoutes>)[key] = funcs as RouteModuleFunctions<TRoutes[typeof key]>;
     }
 
-    return typedRoutes as TypedRoutes<TGenerator>;
+    return typedRoutes as TypedRoutes<TRoutes>;
   }
 
   // Crear funciones para un módulo
@@ -69,7 +68,7 @@ export class AxiosManager<TGenerator extends Record<string, Record<string, Route
         const fn = async <T = unknown>(a: unknown, b?: unknown): Promise<T> => {
           const queryParams = b === undefined ? undefined : a;
           const bindings = b === undefined ? a : b;
-          const finalPath = this.bindPath(path, bindings as PathBindings);
+          const finalPath = this.bindPath(path, bindings as Record<string, string | number>);
           const config: AxiosRequestConfig = { method: httpMethod, url: finalPath, params: queryParams };
           const response = await this.axiosInstance.request(config);
           return response.data as T;
@@ -89,7 +88,7 @@ export class AxiosManager<TGenerator extends Record<string, Record<string, Route
         const fn = async <T = unknown>(body: unknown, a: unknown, b?: unknown): Promise<T> => {
           const queryParams = b === undefined ? undefined : a;
           const bindings = b === undefined ? a : b;
-          const finalPath = this.bindPath(path, bindings as PathBindings);
+          const finalPath = this.bindPath(path, bindings as Record<string, string | number>);
           const config: AxiosRequestConfig = { method: httpMethod, url: finalPath, data: body, params: queryParams };
           const response = await this.axiosInstance.request(config);
           return response.data as T;
@@ -107,19 +106,34 @@ export class AxiosManager<TGenerator extends Record<string, Record<string, Route
     }
   }
 
-  // Bind de parámetros en el path
-  private bindPath(path: string, bindings?: PathBindings): string {
-    if (!bindings) return path;
+  // Bind de parámetros en el path con validación
+  private bindPath(path: string, bindings?: Record<string, string | number>): string {
+    const paramMatches = path.match(/\{([a-zA-Z0-9_]+)\}/g);
+
+    // Si no hay parámetros en la ruta, devolver la ruta tal cual
+    if (!paramMatches || paramMatches.length === 0) {
+      return path;
+    }
+
+    // Si hay parámetros, bindings es obligatorio y debe ser un objeto
+    if (!bindings || typeof bindings !== 'object') {
+      throw new Error(`[AxiosManager] Route '${path}' requires bindings (e.g. { id: 1 }), but received: ${JSON.stringify(bindings)}`);
+    }
 
     let finalPath = path;
-    for (const [key, value] of Object.entries(bindings)) {
-      finalPath = finalPath.replace(new RegExp(`\\{${key}\\}`, 'g'), String(value));
+    for (const match of paramMatches) {
+      const key = match.replace(/\{|\}/g, '');
+      const value = bindings[key];
+
+      if (value === undefined || value === null) {
+        throw new Error(`[AxiosManager] Missing required binding for parameter '${key}' in route '${path}'`);
+      }
+
+      finalPath = finalPath.replace(match, String(value));
     }
 
     return finalPath;
   }
-
-  
 
   // Métodos de utilidad
   setHeader(key: string, value: string): void {

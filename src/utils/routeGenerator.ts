@@ -1,4 +1,4 @@
-import type { RouteDef } from '../types';
+import type { RouteDef, ValidatePath, RouteBuilderGet, RouteBuilderBody, RouteBuilderDelete } from '../types';
 
 /**
  * Helper function to create typed route configurations
@@ -16,71 +16,115 @@ export function route<Path extends string, Method extends 'get' | 'post' | 'put'
   path: Path,
   method: Method
 ) {
-  return { path, httpMethod: method } as RouteDef<Path, Method, Body, Query, HasQuery, Response>;
+  return { path, httpMethod: method } as unknown as RouteDef<Path, Method, Body, Query, HasQuery, Response>;
 }
 
 /**
- * Common HTTP method shortcuts
+ * Common HTTP method shortcuts with Fluent API
  */
-export function get(path: `${string}{${string}}${string}`): RouteDef<typeof path, 'get', never, never, false, unknown>;
-export function get<TResponse = unknown, TQuery = never>(path: `${string}{${string}}${string}`): RouteDef<typeof path, 'get', never, TQuery, [TQuery] extends [never] ? false : true, TResponse>;
-export function get<TResponse = unknown, TQuery = never, TPath extends string = string>(path: TPath): RouteDef<TPath, 'get', never, TQuery, [TQuery] extends [never] ? false : true, TResponse>;
-export function get<TResponse = unknown, TQuery = never, TPath extends string = string>(path: TPath) {
-  return { path, httpMethod: 'get' } as any;
+
+// Helper to attach chainable methods
+function attachGetMethods<D extends RouteDef<any, 'get', never, any, any, any>>(def: D): RouteBuilderGet<D['path'], D['__query'], D['__response']> {
+  const response = <T>() => {
+    const newDef = { ...def } as unknown as RouteDef<D['path'], 'get', never, D['__query'], D['__hasQuery'], T>;
+    return attachGetMethods(newDef);
+  };
+
+  const query = <Q>() => {
+    const newDef = { ...def } as unknown as RouteDef<D['path'], 'get', never, Q, true, D['__response']>;
+    return attachGetMethods(newDef);
+  };
+
+  return Object.assign(def, { response, query });
 }
 
-export function post(path: `${string}{${string}}${string}`): RouteDef<typeof path, 'post', unknown, never, false, unknown>;
-export function post<TBody = unknown, TResponse = unknown, TQuery = never>(path: `${string}{${string}}${string}`): RouteDef<typeof path, 'post', TBody, TQuery, [TQuery] extends [never] ? false : true, TResponse>;
-export function post<TBody = unknown, TResponse = unknown, TQuery = never, TPath extends string = string>(path: TPath): RouteDef<TPath, 'post', TBody, TQuery, [TQuery] extends [never] ? false : true, TResponse>;
-export function post<TBody = unknown, TResponse = unknown, TQuery = never, TPath extends string = string>(path: TPath) {
-  return { path, httpMethod: 'post' } as any;
+function attachBodyMethods<D extends RouteDef<any, 'post' | 'put' | 'patch', any, any, any, any>>(def: D): RouteBuilderBody<D['path'], D['httpMethod'], D['__body'], D['__query'], D['__response']> {
+  const response = <T>() => {
+    const newDef = { ...def } as unknown as RouteDef<D['path'], D['httpMethod'], D['__body'], D['__query'], D['__hasQuery'], T>;
+    return attachBodyMethods(newDef);
+  };
+
+  const query = <Q>() => {
+    const newDef = { ...def } as unknown as RouteDef<D['path'], D['httpMethod'], D['__body'], Q, true, D['__response']>;
+    return attachBodyMethods(newDef);
+  };
+
+  const body = <B>() => {
+    const newDef = { ...def } as unknown as RouteDef<D['path'], D['httpMethod'], B, D['__query'], D['__hasQuery'], D['__response']>;
+    return attachBodyMethods(newDef);
+  };
+
+  return Object.assign(def, { response, query, body });
 }
 
-export function put(path: `${string}{${string}}${string}`): RouteDef<typeof path, 'put', unknown, never, false, unknown>;
-export function put<TBody = unknown, TResponse = unknown, TQuery = never>(path: `${string}{${string}}${string}`): RouteDef<typeof path, 'put', TBody, TQuery, [TQuery] extends [never] ? false : true, TResponse>;
-export function put<TBody = unknown, TResponse = unknown, TQuery = never, TPath extends string = string>(path: TPath): RouteDef<TPath, 'put', TBody, TQuery, [TQuery] extends [never] ? false : true, TResponse>;
-export function put<TBody = unknown, TResponse = unknown, TQuery = never, TPath extends string = string>(path: TPath) {
-  return { path, httpMethod: 'put' } as any;
+function attachDeleteMethods<D extends RouteDef<any, 'delete', never, any, any, any>>(def: D): RouteBuilderDelete<D['path'], D['__query'], D['__response']> {
+  const response = <T>() => {
+    const newDef = { ...def } as unknown as RouteDef<D['path'], 'delete', never, D['__query'], D['__hasQuery'], T>;
+    return attachDeleteMethods(newDef);
+  };
+
+  const query = <Q>() => {
+    const newDef = { ...def } as unknown as RouteDef<D['path'], 'delete', never, Q, true, D['__response']>;
+    return attachDeleteMethods(newDef);
+  };
+
+  return Object.assign(def, { response, query });
 }
 
-export function del(path: `${string}{${string}}${string}`): RouteDef<typeof path, 'delete', never, never, false, unknown>;
-export function del<TQuery = never, TResponse = unknown>(path: `${string}{${string}}${string}`): RouteDef<typeof path, 'delete', never, TQuery, [TQuery] extends [never] ? false : true, TResponse>;
-export function del<TQuery = never, TResponse = unknown, TPath extends string = string>(path: TPath): RouteDef<TPath, 'delete', never, TQuery, [TQuery] extends [never] ? false : true, TResponse>;
-export function del<TQuery = never, TResponse = unknown, TPath extends string = string>(path: TPath) {
-  return { path, httpMethod: 'delete' } as any;
+export function get<TResponse = unknown, TQuery = never, TPath extends string = string>(
+  path: TPath extends ValidatePath<TPath> ? TPath : ValidatePath<TPath>
+): RouteBuilderGet<TPath, TQuery, TResponse> {
+  const def = { path, httpMethod: 'get' } as unknown as RouteDef<TPath, 'get', never, TQuery, [TQuery] extends [never] ? false : true, TResponse>;
+  return attachGetMethods(def);
 }
 
-export function patch(path: `${string}{${string}}${string}`): RouteDef<typeof path, 'patch', unknown, never, false, unknown>;
-export function patch<TBody = unknown, TResponse = unknown, TQuery = never>(path: `${string}{${string}}${string}`): RouteDef<typeof path, 'patch', TBody, TQuery, [TQuery] extends [never] ? false : true, TResponse>;
-export function patch<TBody = unknown, TResponse = unknown, TQuery = never, TPath extends string = string>(path: TPath): RouteDef<TPath, 'patch', TBody, TQuery, [TQuery] extends [never] ? false : true, TResponse>;
-export function patch<TBody = unknown, TResponse = unknown, TQuery = never, TPath extends string = string>(path: TPath) {
-  return { path, httpMethod: 'patch' } as any;
+export function post<TBody = unknown, TResponse = unknown, TQuery = never, TPath extends string = string>(
+  path: TPath extends ValidatePath<TPath> ? TPath : ValidatePath<TPath>
+): RouteBuilderBody<TPath, 'post', TBody, TQuery, TResponse> {
+  const def = { path, httpMethod: 'post' } as unknown as RouteDef<TPath, 'post', TBody, TQuery, [TQuery] extends [never] ? false : true, TResponse>;
+  return attachBodyMethods(def);
+}
+
+export function put<TBody = unknown, TResponse = unknown, TQuery = never, TPath extends string = string>(
+  path: TPath extends ValidatePath<TPath> ? TPath : ValidatePath<TPath>
+): RouteBuilderBody<TPath, 'put', TBody, TQuery, TResponse> {
+  const def = { path, httpMethod: 'put' } as unknown as RouteDef<TPath, 'put', TBody, TQuery, [TQuery] extends [never] ? false : true, TResponse>;
+  return attachBodyMethods(def);
+}
+
+export function del<TQuery = never, TResponse = unknown, TPath extends string = string>(
+  path: TPath extends ValidatePath<TPath> ? TPath : ValidatePath<TPath>
+): RouteBuilderDelete<TPath, TQuery, TResponse> {
+  const def = { path, httpMethod: 'delete' } as unknown as RouteDef<TPath, 'delete', never, TQuery, [TQuery] extends [never] ? false : true, TResponse>;
+  return attachDeleteMethods(def);
+}
+
+export function patch<TBody = unknown, TResponse = unknown, TQuery = never, TPath extends string = string>(
+  path: TPath extends ValidatePath<TPath> ? TPath : ValidatePath<TPath>
+): RouteBuilderBody<TPath, 'patch', TBody, TQuery, TResponse> {
+  const def = { path, httpMethod: 'patch' } as unknown as RouteDef<TPath, 'patch', TBody, TQuery, [TQuery] extends [never] ? false : true, TResponse>;
+  return attachBodyMethods(def);
 }
 
 /**
- * Explicit binding helpers to preserve path literals when only TResponse/TBody/TQuery are provided
+ * Explicit binding helpers kept for backward compatibility or edge cases
  */
-export function getBind<TResponse = unknown, TQuery = never>(path: `${string}{${string}}${string}`): RouteDef<typeof path, 'get', never, TQuery, [TQuery] extends [never] ? false : true, TResponse>;
-export function getBind(path: `${string}{${string}}${string}`) {
-  return { path, httpMethod: 'get' } as any;
+export function getBind<TResponse = unknown, TQuery = never, TPath extends string = string>(path: TPath) {
+  return { path, httpMethod: 'get' } as unknown as RouteDef<TPath, 'get', never, TQuery, [TQuery] extends [never] ? false : true, TResponse>;
 }
 
-export function postBind<TBody = unknown, TResponse = unknown, TQuery = never>(path: `${string}{${string}}${string}`): RouteDef<typeof path, 'post', TBody, TQuery, [TQuery] extends [never] ? false : true, TResponse>;
-export function postBind(path: `${string}{${string}}${string}`) {
-  return { path, httpMethod: 'post' } as any;
+export function postBind<TBody = unknown, TResponse = unknown, TQuery = never, TPath extends string = string>(path: TPath) {
+  return { path, httpMethod: 'post' } as unknown as RouteDef<TPath, 'post', TBody, TQuery, [TQuery] extends [never] ? false : true, TResponse>;
 }
 
-export function putBind<TBody = unknown, TResponse = unknown, TQuery = never>(path: `${string}{${string}}${string}`): RouteDef<typeof path, 'put', TBody, TQuery, [TQuery] extends [never] ? false : true, TResponse>;
-export function putBind(path: `${string}{${string}}${string}`) {
-  return { path, httpMethod: 'put' } as any;
+export function putBind<TBody = unknown, TResponse = unknown, TQuery = never, TPath extends string = string>(path: TPath) {
+  return { path, httpMethod: 'put' } as unknown as RouteDef<TPath, 'put', TBody, TQuery, [TQuery] extends [never] ? false : true, TResponse>;
 }
 
-export function delBind<TQuery = never, TResponse = unknown>(path: `${string}{${string}}${string}`): RouteDef<typeof path, 'delete', never, TQuery, [TQuery] extends [never] ? false : true, TResponse>;
-export function delBind(path: `${string}{${string}}${string}`) {
-  return { path, httpMethod: 'delete' } as any;
+export function delBind<TQuery = never, TResponse = unknown, TPath extends string = string>(path: TPath) {
+  return { path, httpMethod: 'delete' } as unknown as RouteDef<TPath, 'delete', never, TQuery, [TQuery] extends [never] ? false : true, TResponse>;
 }
 
-export function patchBind<TBody = unknown, TResponse = unknown, TQuery = never>(path: `${string}{${string}}${string}`): RouteDef<typeof path, 'patch', TBody, TQuery, [TQuery] extends [never] ? false : true, TResponse>;
-export function patchBind(path: `${string}{${string}}${string}`) {
-  return { path, httpMethod: 'patch' } as any;
+export function patchBind<TBody = unknown, TResponse = unknown, TQuery = never, TPath extends string = string>(path: TPath) {
+  return { path, httpMethod: 'patch' } as unknown as RouteDef<TPath, 'patch', TBody, TQuery, [TQuery] extends [never] ? false : true, TResponse>;
 }
